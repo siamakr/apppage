@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<!--
+This is an app that demonstrates how to control an Arduino101 board
+using BLE (Bluetooth Low Energy).
+-->
+<head>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, user-scalable=no
+		initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0" />
+
+	<title>ELEC 491 - Smaran</title>
+
+	<style>
+		@import 'ui/css/evothings-app.css';
+	</style>
+
+	<script>
+	// Redirect console.log to Evothings Workbench.
+	if (window.hyper && window.hyper.log) { console.log = hyper.log }
+	window.onerror = function(msg, url, line)
+	{
+		console.log(msg + ": " + url + ":" + line);
+	};
+	</script>
+
+	<script src="cordova.js"></script>
+	<script src="libs/jquery/jquery.js"></script>
+	<script src="libs/evothings/evothings.js"></script>
+	<script src="libs/evothings/ui/ui.js"></script>
+	<script src="libs/evothings/arduinoble/arduinoble.js"></script>
+
+</head>
+
+<body ontouchstart=""><!-- ontouchstart="" enables low-delay CSS transitions. -->
+
+
+	<h1>Arduino101 Motor Control BLE</h1>
+
+	<p id="info">Initializing...</p>
+
+	<button class="yellow wide" onclick="app.connect()">CONNECT Prss this first</button>
+
+	<br />
+
+	<center><input type="text" id="m1" value="0"></center>
+
+
+	<button class="green wide big" onclick="app.motor1()">Rotate</button>
+
+	<br />
+
+	<center><input type="text" id="m2" value=0>	</center>
+
+	<button class="red wide big" onclick="app.motor2()">Tilt</button>
+
+	<br />
+
+	<input type="range" name="points" id="points" value="50" min="0" max="100">
+	<script>
+	// Application object.
+	var app = {}
+
+	// Connected device.
+	app.device = null;
+
+	app.writer = function(num)
+	{
+		var i=num;
+		var c=2;
+		var data=[0,0,0]
+		var t;
+		while(i>0)
+		{
+			t=i%16;
+			i=parseInt(i/16);
+			data[c]=t;
+			c--;
+		}
+		app.device && app.device.writeDataArray(new Uint8Array([data[2]]), '19b10001-e8f2-537e-4f6c-d104768a1214');
+		app.device && app.device.writeDataArray(new Uint8Array([data[1]]), '19b10001-e8f2-537e-4f6c-d104768a1214');
+		app.device && app.device.writeDataArray(new Uint8Array([data[0]]), '19b10001-e8f2-537e-4f6c-d104768a1214');
+	}
+
+	// Turn on LED.
+	app.motor1 = function()
+	{
+		app.device && app.device.writeDataArray(new Uint8Array([1]), '19b10001-e8f2-537e-4f6c-d104768a1214');
+		var num=parseInt(document.getElementById("m1").value);
+		app.writer(num)
+	}
+
+	// Turn off LED.
+	app.motor2 = function()
+	{
+		app.device && app.device.writeDataArray(new Uint8Array([2]), '19b10001-e8f2-537e-4f6c-d104768a1214');
+		var num=parseInt(document.getElementById("m2").value);
+		app.writer(num)
+	}
+
+	app.showMessage = function(info)
+	{
+		document.getElementById('info').innerHTML = info
+	};
+
+	// Called when BLE and other native functions are available.
+	app.onDeviceReady = function()
+	{
+		app.showMessage('Touch the connect button to begin.');
+	};
+
+	app.connect = function()
+	{
+		evothings.arduinoble.close();
+
+		app.showMessage('Connecting...');
+
+		evothings.arduinoble.connect(
+			'LED', // Advertised name of BLE device.
+			function(device)
+			{
+				app.device = device;
+				app.showMessage('Connected! Touch buttons to turn LED on/off.');
+			},
+			function(errorCode)
+			{
+				app.showMessage('Connect error: ' + errorCode + '.');
+			});
+	};
+
+	document.addEventListener(
+		'deviceready',
+		function() { evothings.scriptsLoaded(app.onDeviceReady) },
+		false);
+	</script>
+
+</body>
+
+</html>
